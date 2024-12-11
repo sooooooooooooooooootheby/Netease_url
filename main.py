@@ -7,6 +7,8 @@ from random import randrange
 import requests
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from flask_cors import CORS
+import json
 
 def HexDigest(data):
     return "".join([hex(d)[2:].zfill(2) for d in data])
@@ -104,7 +106,7 @@ def url_v1(id, level, cookies):
 
     if level == 'sky':
         payload['immerseType'] = 'c51'
-    
+
     url2 = urllib.parse.urlparse(url).path.replace("/eapi/", "/api/")
     digest = HashHexDigest(f"nobody{url2}use{json.dumps(payload)}md5forencrypt")
     params = f"{url2}-36cd479b6b5-{json.dumps(payload)}-36cd479b6b5-{digest}"
@@ -131,7 +133,23 @@ def lyric_v1(id,cookies):
     response = requests.post(url=url, data=data, cookies=cookies)
     return response.json()
 
+def read_counter(file_path='data.json'):
+# 读取计数器
+    try:
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            return data.get('count', 0)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return 0
+
+def write_counter(count, file_path='data.json'):
+# 写入计数器
+    with open(file_path, 'w') as file:
+        json.dump({'count': count}, file)
+
 app = Flask(__name__)
+
+CORS(app)
 
 @app.route('/')
 def hello_world():
@@ -139,6 +157,11 @@ def hello_world():
 
 @app.route('/Song_V1', methods=['GET', 'POST'])
 def Song_v1():
+    # 调用接口时就让计数器加一
+    count = read_counter()
+    count += 1
+    write_counter(count)
+
     if request.method == 'GET':
         song_ids = request.args.get('ids')
         url = request.args.get('url')
@@ -197,6 +220,11 @@ def Song_v1():
     else:
         data = jsonify({"status": 400,'msg': '解析失败！请检查参数是否完整！'}), 400
     return data
+
+@app.route('/get_count', methods=['GET'])
+def get_count():
+    count = read_counter()
+    return jsonify({'count': count})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
