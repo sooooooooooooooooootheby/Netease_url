@@ -1,3 +1,10 @@
+# 添加的功能
+
+- 跨域
+- 计数器
+
+计数器接口get_count，每次请求/Song_V1时就会使计数器+1 
+
 # 网易云无损解析使用方法
 先安装 文件所需要的依赖模块 
 pip install -r requirements.txt
